@@ -208,7 +208,7 @@ body {
 
 .send-btn .material-symbols-outlined {
     color: white;
-    font-size: 20px;
+    font-size: 24px;
 }
 
 /* Visualization Panel - 65% width, white */
@@ -296,6 +296,89 @@ body {
     font-size: 20px;
     transition: all 0.3s ease;
 }
+
+/* Context Pills - bottom left aligned */
+.context-pills {
+    position: absolute;
+    bottom: 32px;
+    left: 20px;
+    display: none; /* Hidden by default until data is uploaded */
+    gap: 12px;
+    z-index: 10;
+    align-items: center;
+}
+
+.context-pills.visible {
+    display: flex;
+}
+
+.pill {
+    height: 40px;
+    border-radius: 50px;
+    border: 2px solid #66666E;
+    display: flex;
+    align-items: center;
+    padding: 0 12px 0 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 14px;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.pill.deselected {
+    background: #EDF2F4;
+    color: #66666E;
+    border-color: #66666E;
+}
+
+.pill.selected {
+    background: #66666E;
+    color: white;
+    border-color: #66666E;
+}
+
+.pill-text {
+    text-align: left;
+    margin-right: 8px;
+}
+
+.pill-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 14px;
+    color: inherit;
+    padding: 0;
+    text-align: left;
+    width: fit-content;
+    max-width: 400px;
+    margin-right: 8px;
+    flex-shrink: 1;
+}
+
+.pill.selected .pill-input {
+    color: white;
+}
+
+.pill.deselected .pill-input {
+    color: #66666E;
+}
+
+.pill-input::placeholder {
+    color: #9ca3af;
+}
+
+.pill-action {
+    font-size: 20px;
+    margin-left: auto;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Remove hover effect */
 
 /* Data Preview */
 .data-preview {

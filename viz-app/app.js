@@ -7,6 +7,20 @@ let selectedGenes = []; // Store selected genes
 let chatHistory = [];
 let isProcessing = false;
 
+// Context variable - structured JSON for AI chat context
+let context = {
+    "selection": null,
+    "disease-type": null,
+    "comparison-groups": null
+};
+
+// Context pills state (for UI management)
+let contextPillsState = {
+    selection: { active: false },
+    cancerType: { active: false, value: 'Lung' },
+    comparison: { active: false, value: 'Adenocarcinoma vs. Squamous Cell Carcinoma' }
+};
+
 // User-configurable cutoffs (matching volcano app)
 const PVAL_CUTOFF = 0.01;         // adjusted p-value threshold for significance
 const LOG2FC_CUTOFF = 2.0;       // absolute log2 fold-change threshold
@@ -53,9 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check server health
     checkHealth();
     
+    // Initialize context pills
+    initializeContextPills();
+    
     // Clear placeholder messages
     chatMessages.innerHTML = '';
-    addMessage('assistant', 'Hello! I\'m your bioinformatics assistant. Upload a CSV file with DEA results to get started, or ask me any questions about your data analysis.');
+    addMessage('assistant', 'Hello! I\'m your bioinformatics assistant. Upload a CSV file with DEA results to start exploring, I can answer any questions about your data!');
 });
 
 // Handle file upload
@@ -385,7 +402,7 @@ function createVolcanoPlot(data) {
     // Layout
     const layout = {
         title: {
-            text: 'Volcano Plot - Differential Expression Analysis',
+            text: ' Differential Expression Analysis',
             font: { size: 20, family: 'Inter Tight, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto' },
             y: 0.95
         },
@@ -485,6 +502,12 @@ function createVolcanoPlot(data) {
     Plotly.newPlot('volcanoPlotContainer', [traceNS, traceDown, traceUp], layout, config).then(() => {
         console.log('Volcano plot rendered successfully');
         
+        // Show context pills when plot is created
+        const contextPills = document.querySelector('.context-pills');
+        if (contextPills) {
+            contextPills.classList.add('visible');
+        }
+        
         // Add selection event listener
         const plotDiv = document.getElementById('volcanoPlotContainer');
         plotDiv.on('plotly_selected', function(eventData) {
@@ -495,6 +518,8 @@ function createVolcanoPlot(data) {
         plotDiv.on('plotly_deselect', function() {
             selectedGenes = [];
             console.log('Selection cleared');
+            updateSelectionPill();
+            autoDeselectSelectionPill();
         });
     }).catch(error => {
         console.error('Error rendering volcano plot:', error);
@@ -506,6 +531,9 @@ function handlePlotSelection(eventData) {
     if (!eventData || !eventData.points || eventData.points.length === 0) {
         selectedGenes = [];
         console.log('No points selected');
+        
+        // Auto-deselect the selection pill and clear context
+        autoDeselectSelectionPill();
         return;
     }
     
@@ -527,7 +555,9 @@ function handlePlotSelection(eventData) {
             gene: geneName,
             log2FC: log2FC,
             negLog10Padj: negLog10Padj,
-            padj: Math.pow(10, -negLog10Padj)
+            padj: Math.pow(10, -negLog10Padj),
+            category: 'Unknown',
+            isSignificant: false
         };
     });
     
@@ -541,6 +571,14 @@ function handlePlotSelection(eventData) {
         'padj': g.padj?.toExponential(3),
         Category: g.category
     })));
+    
+    // Update selection pill
+    updateSelectionPill();
+    
+    // If selection pill is active, update context immediately
+    if (contextPillsState.selection.active) {
+        updateSelectionContext();
+    }
 }
 
 // Show upload success state
@@ -563,6 +601,209 @@ function showUploadSuccess() {
         uploadIcon.textContent = 'upload';
         uploadBtn.style.background = '#0496FF';
     }, 1500);
+}
+
+// ============================================
+// CONTEXT PILLS FUNCTIONALITY
+// ============================================
+
+function initializeContextPills() {
+    const selectionPill = document.getElementById('selectionPill');
+    const cancerTypePill = document.getElementById('cancerTypePill');
+    const comparisonPill = document.getElementById('comparisonPill');
+    
+    // Selection pill click handler - only trigger on icon click
+    selectionPill.addEventListener('click', (e) => {
+        if (e.target.classList.contains('pill-action')) {
+            togglePill(selectionPill, 'selection');
+        }
+    });
+    
+    // Disease type pill handlers - only trigger on icon click
+    cancerTypePill.addEventListener('click', (e) => {
+        if (e.target.classList.contains('pill-action')) {
+            togglePill(cancerTypePill, 'cancerType');
+        }
+    });
+    
+    const cancerTypeInput = cancerTypePill.querySelector('.pill-input');
+    cancerTypeInput.addEventListener('input', (e) => {
+        contextPillsState.cancerType.value = e.target.value;
+        autoResizeInput(e.target);
+        
+        // Update context if pill is active
+        if (contextPillsState.cancerType.active) {
+            context["disease-type"] = e.target.value;
+            console.log('Disease-type context updated:', context["disease-type"]);
+        }
+    });
+    
+    // Comparison pill handlers - only trigger on icon click
+    comparisonPill.addEventListener('click', (e) => {
+        if (e.target.classList.contains('pill-action')) {
+            togglePill(comparisonPill, 'comparison');
+        }
+    });
+    
+    const comparisonInput = comparisonPill.querySelector('.pill-input');
+    comparisonInput.addEventListener('input', (e) => {
+        contextPillsState.comparison.value = e.target.value;
+        autoResizeInput(e.target);
+        updateVolcanoPlotTitle(e.target.value);
+        
+        // Update context if pill is active
+        if (contextPillsState.comparison.active) {
+            context["comparison-groups"] = e.target.value;
+            console.log('Comparison-groups context updated:', context["comparison-groups"]);
+        }
+    });
+    
+    // Initialize input widths
+    autoResizeInput(cancerTypeInput);
+    autoResizeInput(comparisonInput);
+}
+
+function togglePill(pillElement, type) {
+    const isSelected = pillElement.classList.contains('selected');
+    const actionIcon = pillElement.querySelector('.pill-action');
+    
+    // Special handling for selection pill - don't allow selection if no genes
+    if (type === 'selection' && !isSelected && selectedGenes.length === 0) {
+        console.log('Cannot select - no genes selected on plot');
+        return;
+    }
+    
+    if (isSelected) {
+        // Deselect
+        pillElement.classList.remove('selected');
+        pillElement.classList.add('deselected');
+        actionIcon.textContent = 'add';
+        contextPillsState[type].active = false;
+        
+        // Clear context based on type
+        if (type === 'selection') {
+            context["selection"] = null;
+            console.log('Selection pill deselected');
+        } else if (type === 'cancerType') {
+            context["disease-type"] = null;
+            console.log('Disease-type context cleared');
+        } else if (type === 'comparison') {
+            context["comparison-groups"] = null;
+            console.log('Comparison-groups context cleared');
+        }
+    } else {
+        // Select
+        pillElement.classList.remove('deselected');
+        pillElement.classList.add('selected');
+        actionIcon.textContent = 'close';
+        contextPillsState[type].active = true;
+        
+        // Add to context based on type
+        if (type === 'selection') {
+            updateSelectionContext();
+        } else if (type === 'cancerType') {
+            context["disease-type"] = contextPillsState.cancerType.value;
+            console.log('Disease-type context updated:', context["disease-type"]);
+        } else if (type === 'comparison') {
+            context["comparison-groups"] = contextPillsState.comparison.value;
+            console.log('Comparison-groups context updated:', context["comparison-groups"]);
+        }
+    }
+    
+    console.log('=== CONTEXT VARIABLE ===');
+    console.log(JSON.stringify(context, null, 2));
+}
+
+function updateSelectionContext() {
+    if (selectedGenes.length > 0) {
+        // Format genes for context (matching the structure you provided)
+        context["selection"] = selectedGenes.map(g => ({
+            gene: g.gene,
+            log2FC: g.log2FC,
+            padj: g.padj,
+            negLog10Padj: g.negLog10Padj,
+            category: g.category,
+            isSignificant: g.isSignificant
+        }));
+        console.log('Selection context updated with', selectedGenes.length, 'genes');
+        console.log(JSON.stringify(context["selection"], null, 2));
+    } else {
+        context["selection"] = null;
+        console.log('Selection context cleared - no genes selected');
+    }
+}
+
+function autoDeselectSelectionPill() {
+    const selectionPill = document.getElementById('selectionPill');
+    if (!selectionPill) return;
+    
+    const isSelected = selectionPill.classList.contains('selected');
+    if (isSelected) {
+        const actionIcon = selectionPill.querySelector('.pill-action');
+        selectionPill.classList.remove('selected');
+        selectionPill.classList.add('deselected');
+        actionIcon.textContent = 'add';
+        contextPillsState.selection.active = false;
+    }
+    
+    // Clear selection context
+    context["selection"] = null;
+    console.log('Selection pill auto-deselected - no points selected');
+    console.log('=== CONTEXT VARIABLE ===');
+    console.log(JSON.stringify(context, null, 2));
+}
+
+function autoResizeInput(input) {
+    // Create temporary span to measure text width
+    const span = document.createElement('span');
+    span.style.visibility = 'hidden';
+    span.style.position = 'absolute';
+    span.style.whiteSpace = 'pre';
+    span.style.font = window.getComputedStyle(input).font;
+    span.textContent = input.value || input.placeholder;
+    document.body.appendChild(span);
+    
+    const width = span.offsetWidth + 4; // Add minimal padding
+    input.style.width = Math.max(width, 40) + 'px';
+    
+    document.body.removeChild(span);
+}
+
+function updateSelectionPill() {
+    const selectionPill = document.getElementById('selectionPill');
+    if (!selectionPill) return;
+    
+    const pillText = selectionPill.querySelector('.pill-text');
+    const count = selectedGenes.length;
+    
+    pillText.textContent = `Selection: ${count} gene${count !== 1 ? 's' : ''}`;
+}
+
+function updateVolcanoPlotTitle(comparisonText) {
+    // Update the volcano plot title if it exists
+    const plotDiv = document.getElementById('volcanoPlotContainer');
+    if (plotDiv && typeof Plotly !== 'undefined') {
+        Plotly.relayout(plotDiv, {
+            'title.text': `Volcano Plot - ${comparisonText}`
+        });
+    }
+}
+
+function getContextForChat() {
+    // Check if any context is active
+    const hasSelection = context["selection"] !== null && Array.isArray(context["selection"]) && context["selection"].length > 0;
+    const hasDiseaseType = context["disease-type"] !== null;
+    const hasComparison = context["comparison-groups"] !== null;
+    
+    if (hasSelection || hasDiseaseType || hasComparison) {
+        return {
+            "selection": context["selection"],
+            "disease-type": context["disease-type"],
+            "comparison-groups": context["comparison-groups"]
+        };
+    }
+    
+    return null;
 }
 
 // ============================================
@@ -676,6 +917,9 @@ async function sendMessage() {
     // Add loading indicator
     addLoadingMessage();
     
+    // Get active context from pills
+    const pillContext = getContextForChat();
+    
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -685,7 +929,8 @@ async function sendMessage() {
             body: JSON.stringify({
                 message: message,
                 history: chatHistory,
-                selectedGenes: selectedGenes // Include selected genes in context
+                selectedGenes: selectedGenes, // Include selected genes in context
+                context: pillContext // Include active pill context
             })
         });
         

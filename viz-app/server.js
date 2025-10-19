@@ -101,7 +101,7 @@ async function callMCPTool(toolName, args) {
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history = [], selectedGenes = [] } = req.body;
+    const { message, history = [], selectedGenes = [], context = null } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -109,12 +109,27 @@ app.post('/api/chat', async (req, res) => {
 
     console.log('Received message:', message);
     console.log('Selected genes:', selectedGenes.length);
+    console.log('Active context:', context);
     console.log('MCP Client connected:', !!mcpClient);
 
-    // Build system instruction that includes selected genes context
+    // Build system instruction that includes context from pills
     let systemInstruction = `You are a bioinformatics assistant specialized in analyzing differential expression analysis (DEA) results. You have access to STRING database tools for protein-protein interaction analysis.`;
     
-    if (selectedGenes && selectedGenes.length > 0) {
+    // Add context from pills if active
+    if (context) {
+      if (context.cancerType) {
+        systemInstruction += `\n\nDisease type: ${context.cancerType}`;
+      }
+      
+      if (context.comparison) {
+        systemInstruction += `\n\nComparison groups: ${context.comparison}`;
+      }
+      
+      if (context.selectedGenes) {
+        systemInstruction += `\n\nThe user has selected ${context.selectedGenes.count} genes from the volcano plot: ${context.selectedGenes.genes.map(g => g.gene).slice(0, 10).join(', ')}${context.selectedGenes.count > 10 ? '...' : ''}`;
+      }
+    } else if (selectedGenes && selectedGenes.length > 0) {
+      // Fallback to old method if no context pills active
       systemInstruction += `\n\nThe user has currently selected ${selectedGenes.length} genes from the volcano plot: ${selectedGenes.map(g => g.gene).slice(0, 10).join(', ')}${selectedGenes.length > 10 ? '...' : ''}`;
     }
 

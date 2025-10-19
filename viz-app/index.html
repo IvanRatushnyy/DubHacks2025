@@ -39,6 +39,22 @@
                 <span class="material-symbols-outlined">upload</span>
             </button>
 
+            <!-- Context Pills (bottom center) -->
+            <div class="context-pills" id="contextPills">
+                <div class="pill deselected" id="selectionPill" data-type="selection">
+                    <span class="pill-text">Selection: 0 genes</span>
+                    <span class="pill-action material-symbols-outlined">add</span>
+                </div>
+                <div class="pill deselected" id="cancerTypePill" data-type="cancerType">
+                    <input type="text" class="pill-input" placeholder="Disease type" value="Lung" />
+                    <span class="pill-action material-symbols-outlined">add</span>
+                </div>
+                <div class="pill deselected" id="comparisonPill" data-type="comparison">
+                    <input type="text" class="pill-input" placeholder="Group A vs. Group B" value="Adenocarcinoma vs. Squamous Cell Carcinoma" />
+                    <span class="pill-action material-symbols-outlined">add</span>
+                </div>
+            </div>
+
             <!-- Hidden file input -->
             <input type="file" id="fileInput" accept=".csv" style="display: none;" />
         </div>
