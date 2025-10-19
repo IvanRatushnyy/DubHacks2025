@@ -159,9 +159,9 @@ app.post('/api/chat', async (req, res) => {
     console.log(systemInstruction);
     console.log('=========================');
 
-    // Initialize model - Use Gemini 2.0 Flash which supports function calling
+    // Initialize model - Use Gemini 2.5 Flash which has higher RPD limits
     const modelConfig = {
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.5-flash',
       systemInstruction: systemInstruction
     };
     
