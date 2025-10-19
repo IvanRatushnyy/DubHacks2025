@@ -109,7 +109,7 @@ app.post('/api/chat', async (req, res) => {
 
     console.log('Received message:', message);
     console.log('Selected genes:', selectedGenes.length);
-    console.log('Active context:', context);
+    console.log('Active context:', JSON.stringify(context, null, 2));
     console.log('MCP Client connected:', !!mcpClient);
 
     // Build system instruction that includes context from pills
@@ -117,21 +117,47 @@ app.post('/api/chat', async (req, res) => {
     
     // Add context from pills if active
     if (context) {
-      if (context.cancerType) {
-        systemInstruction += `\n\nDisease type: ${context.cancerType}`;
+      // Add disease type context
+      if (context["disease-type"]) {
+        systemInstruction += `\n\nDISEASE TYPE: ${context["disease-type"]}`;
       }
       
-      if (context.comparison) {
-        systemInstruction += `\n\nComparison groups: ${context.comparison}`;
+      // Add comparison groups context
+      if (context["comparison-groups"]) {
+        systemInstruction += `\n\nCOMPARISON GROUPS: ${context["comparison-groups"]}`;
       }
       
-      if (context.selectedGenes) {
-        systemInstruction += `\n\nThe user has selected ${context.selectedGenes.count} genes from the volcano plot: ${context.selectedGenes.genes.map(g => g.gene).slice(0, 10).join(', ')}${context.selectedGenes.count > 10 ? '...' : ''}`;
+      // Add gene selection context with detailed information
+      if (context["selection"] && Array.isArray(context["selection"]) && context["selection"].length > 0) {
+        const genes = context["selection"];
+        systemInstruction += `\n\nSELECTED GENES FROM VOLCANO PLOT (${genes.length} genes):`;
+        
+        // Add detailed gene information
+        genes.forEach((gene, index) => {
+          if (index < 20) { // Limit to first 20 genes for system instruction
+            systemInstruction += `\n- ${gene.gene}: log2FC=${gene.log2FC?.toFixed(2)}, padj=${gene.padj?.toExponential(2)}, category=${gene.category}`;
+          }
+        });
+        
+        if (genes.length > 20) {
+          systemInstruction += `\n... and ${genes.length - 20} more genes`;
+        }
+        
+        // Add summary statistics
+        const upregulated = genes.filter(g => g.category === 'Upregulated').length;
+        const downregulated = genes.filter(g => g.category === 'Downregulated').length;
+        const notSignificant = genes.filter(g => g.category === 'Not significant').length;
+        
+        systemInstruction += `\n\nSUMMARY: ${upregulated} upregulated, ${downregulated} downregulated, ${notSignificant} not significant`;
       }
     } else if (selectedGenes && selectedGenes.length > 0) {
       // Fallback to old method if no context pills active
       systemInstruction += `\n\nThe user has currently selected ${selectedGenes.length} genes from the volcano plot: ${selectedGenes.map(g => g.gene).slice(0, 10).join(', ')}${selectedGenes.length > 10 ? '...' : ''}`;
     }
+    
+    console.log('=== SYSTEM INSTRUCTION ===');
+    console.log(systemInstruction);
+    console.log('=========================');
 
     // Initialize model - Use Gemini 2.0 Flash which supports function calling
     const modelConfig = {

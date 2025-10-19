@@ -31,9 +31,24 @@ body {
     padding: 24px;
     padding-bottom: calc(20vh + 24px);
     overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
     display: flex;
     flex-direction: column;
     gap: 20px;
+    position: relative;
+}
+
+/* Gradient fade effect before input box */
+.chat-messages::after {
+    content: '';
+    position: fixed;
+    bottom: 20vh; /* Start gradient just above input box */
+    left: 0;
+    width: 35%;
+    height: 40px; /* Reduced from 80px - more subtle gradient */
+    background: linear-gradient(to bottom, rgba(237, 242, 244, 0), rgba(237, 242, 244, 1));
+    pointer-events: none; /* Allow clicks through gradient */
+    z-index: 4;
 }
 
 .message {
@@ -42,6 +57,9 @@ body {
     background: white;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     animation: messageSlideIn 0.3s ease-out;
+    max-width: 100%; /* Prevent messages from exceeding container width */
+    word-wrap: break-word; /* Break long words */
+    overflow-wrap: break-word; /* Break long words */
 }
 
 @keyframes messageSlideIn {
@@ -69,6 +87,9 @@ body {
     line-height: 1.6;
     color: #374151;
     margin: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
 .message code {
@@ -78,6 +99,9 @@ body {
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: 13px;
     color: #dc2626;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap; /* Allow code to wrap */
 }
 
 .message strong {
@@ -169,7 +193,9 @@ body {
     transition: box-shadow 0.2s;
     resize: none;
     overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal scrolling in textarea */
     line-height: 1.5;
+    word-wrap: break-word;
 }
 
 .chat-input textarea:focus {
@@ -297,19 +323,45 @@ body {
     transition: all 0.3s ease;
 }
 
-/* Context Pills - bottom left aligned */
-.context-pills {
+/* Context Pills - bottom left aligned with horizontal scroll */
+.pills-scroll-container {
     position: absolute;
     bottom: 32px;
     left: 20px;
+    right: 84px; /* Space for upload button (32px right + 40px button + 12px gap) */
     display: none; /* Hidden by default until data is uploaded */
-    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
     z-index: 10;
-    align-items: center;
 }
 
-.context-pills.visible {
+.pills-scroll-container.visible {
+    display: block;
+}
+
+/* Hide scrollbar but keep functionality */
+.pills-scroll-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.pills-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pills-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(102, 102, 110, 0.3);
+    border-radius: 3px;
+}
+
+.pills-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 102, 110, 0.5);
+}
+
+.context-pills {
     display: flex;
+    gap: 12px;
+    align-items: center;
+    width: fit-content;
 }
 
 .pill {
@@ -325,6 +377,8 @@ body {
     font-size: 14px;
     white-space: nowrap;
     user-select: none;
+    min-width: 80px; /* Reduced from default */
+    flex-shrink: 0; /* Prevent pills from shrinking */
 }
 
 .pill.deselected {

@@ -502,10 +502,10 @@ function createVolcanoPlot(data) {
     Plotly.newPlot('volcanoPlotContainer', [traceNS, traceDown, traceUp], layout, config).then(() => {
         console.log('Volcano plot rendered successfully');
         
-        // Show context pills when plot is created
-        const contextPills = document.querySelector('.context-pills');
-        if (contextPills) {
-            contextPills.classList.add('visible');
+        // Show context pills container when plot is created
+        const pillsContainer = document.querySelector('.pills-scroll-container');
+        if (pillsContainer) {
+            pillsContainer.classList.add('visible');
         }
         
         // Add selection event listener
@@ -764,7 +764,7 @@ function autoResizeInput(input) {
     document.body.appendChild(span);
     
     const width = span.offsetWidth + 4; // Add minimal padding
-    input.style.width = Math.max(width, 40) + 'px';
+    input.style.width = Math.max(width, 30) + 'px'; // Reduced from 40px to 30px
     
     document.body.removeChild(span);
 }
