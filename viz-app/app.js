@@ -92,6 +92,9 @@ async function handleFileUpload(event) {
     console.log('File selected:', file.name);
     console.log('File size:', (file.size / 1024).toFixed(2), 'KB');
     
+    // Parse filename for disease type and comparison groups
+    parseFilenameForContext(file.name);
+    
     try {
         // Read file
         const text = await file.text();
@@ -185,6 +188,103 @@ function parseCSVLine(line) {
     return values;
 }
 
+// Parse filename to extract disease type and comparison groups
+// Expected format: diseaseType_groupA_vs_groupB.csv
+// Example: lung_adenocarcinoma_vs_squamous_cell_carcinoma.csv
+function parseFilenameForContext(filename) {
+    const cancerTypePill = document.getElementById('cancerTypePill');
+    const comparisonPill = document.getElementById('comparisonPill');
+    
+    // Remove .csv extension
+    const nameWithoutExt = filename.replace('.csv', '');
+    
+    // Check if filename contains underscores (indicating it might be in the expected format)
+    if (!nameWithoutExt.includes('_')) {
+        console.log('Filename not in expected format - pills will remain empty');
+        clearPills(cancerTypePill, comparisonPill);
+        return;
+    }
+    
+    // Split by underscore
+    const parts = nameWithoutExt.split('_');
+    
+    // Check if we have at least 4 parts and contains 'vs'
+    const vsIndex = parts.findIndex(p => p.toLowerCase() === 'vs');
+    
+    if (vsIndex === -1 || vsIndex === 0 || vsIndex === parts.length - 1) {
+        console.log('Filename not in expected format (no valid "vs" separator) - pills will remain empty');
+        clearPills(cancerTypePill, comparisonPill);
+        return;
+    }
+    
+    // Disease type: everything before 'vs' (excluding the last part before 'vs')
+    const diseaseTypeParts = parts.slice(0, vsIndex - 1);
+    
+    // If no disease type parts, format is invalid
+    if (diseaseTypeParts.length === 0) {
+        console.log('Filename not in expected format (no disease type) - pills will remain empty');
+        clearPills(cancerTypePill, comparisonPill);
+        return;
+    }
+    
+    const diseaseType = diseaseTypeParts.join(' ').replace(/\b\w/g, c => c.toUpperCase());
+    
+    // Group A: part before 'vs'
+    const groupA = parts[vsIndex - 1].replace(/\b\w/g, c => c.toUpperCase());
+    
+    // Group B: everything after 'vs'
+    const groupBParts = parts.slice(vsIndex + 1);
+    const groupB = groupBParts.join(' ').replace(/\b\w/g, c => c.toUpperCase());
+    
+    // Comparison text: "Group A vs. Group B"
+    const comparisonText = `${groupA} vs. ${groupB}`;
+    
+    console.log('Parsed filename:', { diseaseType, groupA, groupB, comparisonText });
+    
+    // Update the pills
+    if (cancerTypePill && diseaseType) {
+        const input = cancerTypePill.querySelector('.pill-input');
+        input.value = diseaseType;
+        contextPillsState.cancerType.value = diseaseType;
+        autoResizeInput(input);
+    }
+    
+    if (comparisonPill && comparisonText) {
+        const input = comparisonPill.querySelector('.pill-input');
+        input.value = comparisonText;
+        contextPillsState.comparison.value = comparisonText;
+        autoResizeInput(input);
+        
+        // Update volcano plot title if data is already loaded
+        if (deaData && deaData.length > 0) {
+            updateVolcanoPlotTitle(comparisonText);
+        }
+    }
+    
+    // Update disabled states
+    updatePillDisabledStates();
+}
+
+// Helper function to clear pill values
+function clearPills(cancerTypePill, comparisonPill) {
+    if (cancerTypePill) {
+        const input = cancerTypePill.querySelector('.pill-input');
+        input.value = '';
+        contextPillsState.cancerType.value = '';
+        autoResizeInput(input);
+    }
+    
+    if (comparisonPill) {
+        const input = comparisonPill.querySelector('.pill-input');
+        input.value = '';
+        contextPillsState.comparison.value = '';
+        autoResizeInput(input);
+    }
+    
+    // Update disabled states to grey out the pills
+    updatePillDisabledStates();
+}
+
 // Analyze data and extract statistics
 function analyzeData(data) {
     if (!data || data.length === 0) {
@@ -237,17 +337,19 @@ function displayDataPreview(filename, stats) {
     const html = `
         <div class="threshold-controls">
             <div class="threshold-title">Threshold:</div>
-            <div class="threshold-input-group">
-                <label for="log2fcThreshold">log2FC</label>
-                <input type="number" id="log2fcThreshold" value="2.0" step="0.1" min="0" />
-            </div>
-            <div class="threshold-input-group">
-                <label for="pvalThreshold">-log10(p)</label>
-                <input type="number" id="pvalThreshold" value="2" step="0.1" min="0" />
+            <div class="threshold-inputs">
+                <div class="threshold-input-group">
+                    <label for="log2fcThreshold">log2FC</label>
+                    <input type="number" id="log2fcThreshold" value="2.0" step="0.1" min="0" />
+                </div>
+                <div class="threshold-input-group">
+                    <label for="pvalThreshold">-log10(p)</label>
+                    <input type="number" id="pvalThreshold" value="2" step="0.1" min="0" />
+                </div>
             </div>
         </div>
         
-        <div id="volcanoPlotContainer" style="width: 100%; height: 600px; margin-bottom: 24px;"></div>
+        <div id="volcanoPlotContainer" style="width: 100%; height: calc(100vh - 180px);"></div>
     `;
     
     vizContent.innerHTML = html;
@@ -402,9 +504,11 @@ function createVolcanoPlot(data) {
     // Layout
     const layout = {
         title: {
-            text: ' Differential Expression Analysis',
+            text: contextPillsState.comparison.value 
+                ? `${contextPillsState.comparison.value}` 
+                : 'Differential Expression Analysis',
             font: { size: 20, family: 'Inter Tight, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto' },
-            y: 0.95
+            y: 0.942
         },
         xaxis: {
             title: {
@@ -502,19 +606,21 @@ function createVolcanoPlot(data) {
     Plotly.newPlot('volcanoPlotContainer', [traceNS, traceDown, traceUp], layout, config).then(() => {
         console.log('Volcano plot rendered successfully');
         
+        // Set default drag mode to box select
+        const plotDiv = document.getElementById('volcanoPlotContainer');
+        Plotly.relayout(plotDiv, { dragmode: 'select' });
+        
         // Show context pills container when plot is created
         const pillsContainer = document.querySelector('.pills-scroll-container');
         if (pillsContainer) {
             pillsContainer.classList.add('visible');
         }
         
-        // Add selection event listener
-        const plotDiv = document.getElementById('volcanoPlotContainer');
+        // Add selection and deselection event listeners
         plotDiv.on('plotly_selected', function(eventData) {
             handlePlotSelection(eventData);
         });
         
-        // Add deselect event listener
         plotDiv.on('plotly_deselect', function() {
             selectedGenes = [];
             console.log('Selection cleared');
@@ -534,6 +640,9 @@ function handlePlotSelection(eventData) {
         
         // Auto-deselect the selection pill and clear context
         autoDeselectSelectionPill();
+        
+        // Update disabled states
+        updatePillDisabledStates();
         return;
     }
     
@@ -574,6 +683,9 @@ function handlePlotSelection(eventData) {
     
     // Update selection pill
     updateSelectionPill();
+    
+    // Update disabled states
+    updatePillDisabledStates();
     
     // If selection pill is active, update context immediately
     if (contextPillsState.selection.active) {
@@ -630,6 +742,7 @@ function initializeContextPills() {
     cancerTypeInput.addEventListener('input', (e) => {
         contextPillsState.cancerType.value = e.target.value;
         autoResizeInput(e.target);
+        updatePillDisabledStates(); // Update disabled state when input changes
         
         // Update context if pill is active
         if (contextPillsState.cancerType.active) {
@@ -650,6 +763,7 @@ function initializeContextPills() {
         contextPillsState.comparison.value = e.target.value;
         autoResizeInput(e.target);
         updateVolcanoPlotTitle(e.target.value);
+        updatePillDisabledStates(); // Update disabled state when input changes
         
         // Update context if pill is active
         if (contextPillsState.comparison.active) {
@@ -661,9 +775,18 @@ function initializeContextPills() {
     // Initialize input widths
     autoResizeInput(cancerTypeInput);
     autoResizeInput(comparisonInput);
+    
+    // Initialize disabled states
+    updatePillDisabledStates();
 }
 
 function togglePill(pillElement, type) {
+    // Check if pill is disabled
+    if (pillElement.classList.contains('disabled')) {
+        console.log(`Cannot toggle ${type} pill - disabled (no data available)`);
+        return;
+    }
+    
     const isSelected = pillElement.classList.contains('selected');
     const actionIcon = pillElement.querySelector('.pill-action');
     
@@ -769,6 +892,50 @@ function autoResizeInput(input) {
     document.body.removeChild(span);
 }
 
+function updatePillDisabledStates() {
+    const selectionPill = document.getElementById('selectionPill');
+    const cancerTypePill = document.getElementById('cancerTypePill');
+    const comparisonPill = document.getElementById('comparisonPill');
+    
+    if (!selectionPill || !cancerTypePill || !comparisonPill) return;
+    
+    // Selection pill: disabled if no genes selected
+    if (selectedGenes.length === 0) {
+        selectionPill.classList.add('disabled');
+        selectionPill.classList.remove('selected', 'deselected');
+    } else {
+        selectionPill.classList.remove('disabled');
+        // Restore to deselected state if it was disabled
+        if (!selectionPill.classList.contains('selected')) {
+            selectionPill.classList.add('deselected');
+        }
+    }
+    
+    // Cancer type pill: disabled if input is empty
+    const cancerTypeInput = cancerTypePill.querySelector('.pill-input');
+    if (!cancerTypeInput.value.trim()) {
+        cancerTypePill.classList.add('disabled');
+        cancerTypePill.classList.remove('selected', 'deselected');
+    } else {
+        cancerTypePill.classList.remove('disabled');
+        if (!cancerTypePill.classList.contains('selected')) {
+            cancerTypePill.classList.add('deselected');
+        }
+    }
+    
+    // Comparison pill: disabled if input is empty
+    const comparisonInput = comparisonPill.querySelector('.pill-input');
+    if (!comparisonInput.value.trim()) {
+        comparisonPill.classList.add('disabled');
+        comparisonPill.classList.remove('selected', 'deselected');
+    } else {
+        comparisonPill.classList.remove('disabled');
+        if (!comparisonPill.classList.contains('selected')) {
+            comparisonPill.classList.add('deselected');
+        }
+    }
+}
+
 function updateSelectionPill() {
     const selectionPill = document.getElementById('selectionPill');
     if (!selectionPill) return;
@@ -784,7 +951,7 @@ function updateVolcanoPlotTitle(comparisonText) {
     const plotDiv = document.getElementById('volcanoPlotContainer');
     if (plotDiv && typeof Plotly !== 'undefined') {
         Plotly.relayout(plotDiv, {
-            'title.text': `Volcano Plot - ${comparisonText}`
+            'title.text': comparisonText
         });
     }
 }
@@ -838,7 +1005,7 @@ function addMessage(role, content) {
 
 // Format message content with links, images, and markdown
 function formatMessageContent(content) {
-    // Convert markdown-style formatting
+    // Convert markdown-style formatting (but preserve image syntax)
     let formatted = content
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -847,27 +1014,39 @@ function formatMessageContent(content) {
     // Convert line breaks
     formatted = formatted.replace(/\n/g, '<br>');
     
-    // Detect and format image URLs (especially STRING network images)
+    // Handle markdown linked images: [![alt](image_url)](link_url)
+    formatted = formatted.replace(
+        /\[!\[([^\]]*)\]\((https?:\/\/[^\s\)]+\.(?:png|jpg|jpeg|gif|webp)[^\s\)]*)\)\]\((https?:\/\/[^\s\)]+)\)/gi,
+        '<div class="image-container"><a href="$3" target="_blank" rel="noopener noreferrer"><img src="$2" alt="$1" class="message-image" loading="lazy"></a></div>'
+    );
+    
+    // Handle standard markdown images: ![alt](image_url)
+    formatted = formatted.replace(
+        /!\[([^\]]*)\]\((https?:\/\/[^\s\)]+\.(?:png|jpg|jpeg|gif|webp)[^\s\)]*)\)/gi,
+        '<div class="image-container"><img src="$2" alt="$1" class="message-image" loading="lazy"></div>'
+    );
+    
+    // Detect and format image URLs with descriptive text like "Image of X"
     formatted = formatted.replace(
         /\[Image of (.*?)\]\((https?:\/\/[^\s\)]+\.(?:png|jpg|jpeg|gif|webp)[^\s\)]*)\)/gi,
-        '<div class="image-container"><img src="$2" alt="$1" class="message-image" loading="lazy"><p class="image-caption">$1</p></div>'
+        '<div class="image-container"><img src="$2" alt="$1" class="message-image" loading="lazy"></div>'
     );
     
     // Detect standalone image URLs
     formatted = formatted.replace(
-        /(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp)[^\s]*)/gi,
+        /(?<!["'=src])(https?:\/\/[^\s<]+\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s<]*)?)/gi,
         '<div class="image-container"><img src="$1" alt="Network visualization" class="message-image" loading="lazy"></div>'
     );
     
-    // Format markdown-style links [text](url)
+    // Format markdown-style links [text](url) - must come after image processing
     formatted = formatted.replace(
         /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g,
         '<a href="$2" target="_blank" rel="noopener noreferrer" class="message-link">$1</a>'
     );
     
-    // Format plain URLs (http/https)
+    // Format plain URLs (http/https) - must come last
     formatted = formatted.replace(
-        /(?<!["'=])(https?:\/\/[^\s<]+)(?![^<]*>)/g,
+        /(?<!["'=src])(https?:\/\/[^\s<]+)(?![^<]*>|[^<]*<\/a>)/g,
         '<a href="$1" target="_blank" rel="noopener noreferrer" class="message-link">$1</a>'
     );
     
