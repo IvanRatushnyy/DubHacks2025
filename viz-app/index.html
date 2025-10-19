@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEA Visualization</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Chat Panel (35% width, #EDF2F4) -->
+        <div id="chat" class="chat-panel">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be added dynamically by JavaScript -->
+            </div>
+            <div class="chat-input">
+                <textarea placeholder="Ask about your data or selected genes..." id="chatInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+                <button class="send-btn" id="sendBtn" title="Send message">
+                    <span class="material-symbols-outlined">arrow_upward_alt</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Visualization Panel (65% width, white) -->
+        <div id="viz" class="viz-panel">
+            <div class="viz-content" id="vizContent">
+                <div id="volcanoPlot" class="empty-state clickable-upload">
+                    <p>Click to upload DEA results and start exploring!</p>
+                </div>
+            </div>
+
+            <!-- Upload Button (bottom right) -->
+            <button class="upload-btn" id="uploadBtn" title="Upload CSV">
+                <span class="material-symbols-outlined">upload</span>
+            </button>
+
+            <!-- Hidden file input -->
+            <input type="file" id="fileInput" accept=".csv" style="display: none;" />
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

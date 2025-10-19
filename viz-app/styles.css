@@ -1,0 +1,446 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+}
+
+/* Chat Panel - 35% width, #EDF2F4 */
+#chat {
+    width: 35%;
+    background-color: #EDF2F4;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 24px;
+    padding-bottom: calc(20vh + 24px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.message {
+    padding: 16px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message.user {
+    background: #e0f2fe;
+    border-left: 3px solid #0284c7;
+}
+
+.message.assistant {
+    background: white;
+}
+
+.message p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #374151;
+    margin: 0;
+}
+
+.message code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    color: #dc2626;
+}
+
+.message strong {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.message em {
+    font-style: italic;
+    color: #4b5563;
+}
+
+.message-link {
+    color: #0284c7;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.message-link:hover {
+    color: #0369a1;
+}
+
+.message-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-container {
+    margin: 12px 0;
+}
+
+.image-caption {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 6px;
+    font-style: italic;
+}
+
+.generating-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #3b82f6;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.generating-indicator .material-symbols-outlined {
+    font-size: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.chat-input {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 20vh;
+    padding: 0;
+    background-color: #EDF2F4;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 18px;
+    z-index: 5;
+}
+
+.chat-input textarea {
+    width: 100%;
+    height: 100%;
+    padding: 16px 20px;
+    padding-right: 70px;
+    border: none;
+    border-radius: 12px 12px 0 0;
+    font-size: 14px;
+    font-family: 'Inter Tight', sans-serif;
+    color: #66666E;
+    outline: none;
+    background: white;
+    box-shadow: 0 -4px 12px rgba(102, 102, 110, 0.08), 4px 0 12px rgba(102, 102, 110, 0.08);
+    transition: box-shadow 0.2s;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.chat-input textarea:focus {
+    box-shadow: 0 -4px 16px rgba(102, 102, 110, 0.15), 4px 0 16px rgba(102, 102, 110, 0.15);
+}
+
+.chat-input textarea::placeholder {
+    color: #9ca3af;
+    font-family: 'Inter Tight', sans-serif;
+}
+
+.send-btn {
+    position: absolute;
+    bottom: 32px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #66666E;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 10;
+}
+
+.send-btn:hover {
+    background: #4d4d53;
+}
+
+.send-btn:active {
+    background: #3a3a3e;
+}
+
+.send-btn .material-symbols-outlined {
+    color: white;
+    font-size: 20px;
+}
+
+/* Visualization Panel - 65% width, white */
+#viz {
+    width: 65%;
+    background-color: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.viz-content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: #9ca3af;
+    font-size: 18px;
+    overflow: hidden;
+}
+
+.clickable-upload {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    padding: 60px 40px;
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    width: 400px;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.clickable-upload:hover {
+    background: #f3f4f6;
+    border-color: #0496FF;
+    color: #0496FF;
+}
+
+.clickable-upload p {
+    font-weight: 500;
+    user-select: none;
+    margin: 0;
+}
+
+/* Upload Button - bottom right */
+.upload-btn {
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #0496FF;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+    z-index: 10;
+}
+
+.upload-btn:hover {
+    background: #027BCE;
+}
+
+.upload-btn:active {
+    background: #016AAD;
+}
+
+.upload-btn .material-symbols-outlined {
+    color: white;
+    font-size: 20px;
+    transition: all 0.3s ease;
+}
+
+/* Data Preview */
+.data-preview {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.data-preview h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 16px;
+}
+
+.data-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.stat-item {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.success-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #059669;
+    font-size: 14px;
+    padding: 12px;
+    background: #d1fae5;
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.success-message .material-symbols-outlined {
+    font-size: 20px;
+}
+
+/* Scrollbar styling */
+.chat-messages::-webkit-scrollbar,
+.viz-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track,
+.viz-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.viz-content::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.viz-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Volcano Plot Styling */
+#volcanoPlot {
+    width: 100%;
+    height: 100%;
+}
+
+#volcanoPlot.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Threshold Controls */
+.threshold-controls {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding: 16px 0;
+    align-items: center;
+}
+
+.threshold-title {
+    font-size: 14px;
+    color: #66666E;
+    font-weight: 400;
+    font-family: 'Inter Tight', sans-serif;
+}
+
+.threshold-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.threshold-input-group label {
+    font-size: 14px;
+    color: #66666E;
+    font-weight: 400;
+    white-space: nowrap;
+    font-family: 'Inter Tight', sans-serif;
+}
+
+.threshold-input-group input[type="number"] {
+    width: 60px;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Inter Tight', sans-serif;
+    color: #1f2937;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.threshold-input-group input[type="number"]:focus {
+    border-color: #3b82f6;
+}
+
+.threshold-input-group input[type="number"]:hover {
+    border-color: #9ca3af;
+}
+

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Chat with STRING MCP</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧬 Gemini Chat with STRING MCP</h1>
+            <div class="status">
+                <span id="status-indicator" class="status-indicator"></span>
+                <span id="status-text">Checking connection...</span>
+            </div>
+        </header>
+
+        <div class="tools-panel" id="tools-panel">
+            <h3>Available Tools</h3>
+            <div id="tools-list" class="tools-list">
+                Loading tools...
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        <p>Hello! I'm your AI assistant powered by Gemini with access to STRING database tools.</p>
+                        <p>You can ask me about:</p>
+                        <ul>
+                            <li>Protein interactions and networks</li>
+                            <li>Functional enrichment analysis</li>
+                            <li>Protein homology across species</li>
+                            <li>Functional annotations</li>
+                        </ul>
+                        <p>Try asking: "What are the interactions for TP53?" or "Find proteins related to apoptosis"</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <textarea 
+                    id="message-input" 
+                    placeholder="Type your message here..." 
+                    rows="1"
+                ></textarea>
+                <button id="send-button" onclick="sendMessage()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
