@@ -1,13 +1,15 @@
-# Gemini Chat App with STRING MCP
+# SaGene - RNA-seq DEA Visualization Platform
 
-A simple chat application powered by Google's Gemini API with Model Context Protocol (MCP) integration to access STRING protein database tools.
+An interactive visualization platform for RNA-seq Differential Expression Analysis (DEA) results, powered by Google's Gemini AI with Model Context Protocol (MCP) integration to access STRING protein database tools.
 
 ## Features
 
-- 💬 Chat interface with Gemini AI
-- 🧬 Access to STRING database protein interaction tools
-- 🔧 MCP integration for tool calling
-- 🎨 Modern, responsive UI
+- Interactive volcano plot visualization with Plotly.js
+- AI-powered chat interface with Gemini
+- Access to STRING database protein interaction tools
+- Automatic context extraction from DEA result files
+- MCP integration for biological tool calling
+- Modern, responsive two-column layout
 
 ## STRING MCP Tools
 
@@ -75,17 +77,20 @@ The app will be available at `http://localhost:3000`
 ## Usage
 
 1. Open your browser to `http://localhost:3000`
-2. Check the status indicator to ensure MCP connection is active
-3. View available tools in the tools panel
-4. Start chatting! Try questions like:
-   - "What are the interactions for TP53?"
-   - "Find proteins related to apoptosis"
-   - "Show me the protein network for BRCA1"
-   - "What is the functional enrichment for genes involved in DNA repair?"
+2. Upload a DEA results CSV file (must include columns: gene, log2FoldChange, padj)
+3. The app will automatically extract context from the filename if formatted as: `{disease}_{groupA}_vs_{groupB}.csv`
+4. Interact with the volcano plot to explore differentially expressed genes
+5. Use the AI chat to ask questions about specific genes, pathways, or protein interactions
+
+Example questions:
+- "What are the interactions for TP53?"
+- "Find proteins related to apoptosis"
+- "Show me the protein network for BRCA1"
+- "What is the functional enrichment for genes involved in DNA repair?"
 
 ## Architecture
 
-- **Frontend**: Vanilla JavaScript with modern UI
+- **Frontend**: Vanilla JavaScript with Plotly.js visualization
 - **Backend**: Node.js with Express
 - **AI**: Google Gemini 2.0 Flash
 - **MCP**: Model Context Protocol SDK for tool integration
