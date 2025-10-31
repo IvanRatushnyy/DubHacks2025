@@ -192,7 +192,7 @@ app.post('/api/chat', async (req, res) => {
         parts: [{ text: msg.content }]
       })),
       generationConfig: {
-        maxOutputTokens: 2048,
+        maxOutputTokens: 10000,
         temperature: 0.7,
       },
     });
