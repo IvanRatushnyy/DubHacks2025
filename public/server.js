@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = process.env.VIZ_PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -101,7 +101,7 @@ async function callMCPTool(toolName, args) {
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history = [], selectedGenes = [], context = null } = req.body;
+    const { message, history = [], selectedGenes = [], context = null, apiKey = null } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -111,6 +111,17 @@ app.post('/api/chat', async (req, res) => {
     console.log('Selected genes:', selectedGenes.length);
     console.log('Active context:', JSON.stringify(context, null, 2));
     console.log('MCP Client connected:', !!mcpClient);
+    console.log('Custom API key provided:', !!apiKey);
+
+    // Use custom API key if provided, otherwise use environment variable
+    const apiKeyToUse = apiKey || process.env.GEMINI_API_KEY;
+    
+    if (!apiKeyToUse) {
+      return res.status(400).json({ error: 'API key is required. Please provide one in the input field or set GEMINI_API_KEY in .env file.' });
+    }
+    
+    // Initialize Gemini with the appropriate API key
+    const genAIInstance = new GoogleGenerativeAI(apiKeyToUse);
 
     // Build system instruction that includes context from pills
     let systemInstruction = `You are a bioinformatics assistant specialized in analyzing differential expression analysis (DEA) results. You have access to STRING database tools for protein-protein interaction analysis.`;
@@ -170,7 +181,7 @@ app.post('/api/chat', async (req, res) => {
       modelConfig.tools = [{ functionDeclarations: convertMCPToolsToGeminiFunctions() }];
     }
     
-    const model = genAI.getGenerativeModel(modelConfig);
+    const model = genAIInstance.getGenerativeModel(modelConfig);
 
     console.log('Model initialized with', mcpClient ? availableTools.length : 0, 'tools');
 

@@ -1,12 +1,12 @@
 {
-  "name": "gemini-chat-app",
+  "name": "sagene-dea-viz",
   "version": "1.0.0",
-  "description": "Simple chat app using Gemini API with STRING MCP server",
-  "main": "server.js",
+  "description": "SaGene - RNA-seq DEA visualization with Gemini AI and STRING MCP server",
+  "main": "public/server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node public/server.js",
+    "dev": "node public/server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
