@@ -4,6 +4,9 @@
   "description": "SaGene - RNA-seq DEA visualization with Gemini AI and STRING MCP server",
   "main": "public/server.js",
   "type": "module",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node public/server.js",
     "dev": "node public/server.js"

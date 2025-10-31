@@ -6,6 +6,7 @@ let selectedGenes = []; // Store selected genes
 // Chat state
 let chatHistory = [];
 let isProcessing = false;
+let hasServerApiKey = false; // Track if server has API key configured
 
 // Context variable - structured JSON for AI chat context
 let context = {
@@ -42,11 +43,23 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.click();
     });
     
-    // Make empty state clickable for upload
+    // Make empty state clickable for upload (but not the button inside it)
     const emptyState = document.querySelector('.clickable-upload');
     if (emptyState) {
-        emptyState.addEventListener('click', () => {
-            fileInput.click();
+        emptyState.addEventListener('click', (e) => {
+            // Don't trigger file upload if clicking the sample data button
+            if (e.target.id !== 'sampleDataBtn') {
+                fileInput.click();
+            }
+        });
+    }
+    
+    // Sample data button handler
+    const sampleDataBtn = document.getElementById('sampleDataBtn');
+    if (sampleDataBtn) {
+        sampleDataBtn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Prevent triggering the empty-state click
+            await loadSampleDataset();
         });
     }
     
@@ -64,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Check server health
+    // Check server health and API key availability
     checkHealth();
     
     // Initialize context pills
@@ -74,6 +87,58 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.innerHTML = '';
     addMessage('assistant', 'Hello! I\'m your bioinformatics assistant. Upload a CSV file with DEA results to start exploring, I can answer any questions about your data!');
 });
+
+// Load sample dataset from server
+async function loadSampleDataset() {
+    try {
+        console.log('Loading sample dataset...');
+        
+        // Fetch the sample CSV file from the public directory
+        const response = await fetch('lung_adenocarcinoma_vs_squamous_cell_carcinoma.csv');
+        
+        if (!response.ok) {
+            throw new Error('Failed to load sample dataset');
+        }
+        
+        const text = await response.text();
+        
+        // Parse CSV
+        const parsedData = parseCSV(text);
+        
+        // Store data globally
+        deaData = parsedData;
+        
+        // Set filename for context parsing
+        const filename = 'lung_adenocarcinoma_vs_squamous_cell_carcinoma.csv';
+        
+        // Parse filename for disease type and comparison groups
+        parseFilenameForContext(filename);
+        
+        // Log data structure to console
+        console.log('=== Sample DEA Data Loaded ===');
+        console.log('Total rows:', parsedData.length);
+        console.log('Columns:', parsedData.length > 0 ? Object.keys(parsedData[0]) : []);
+        console.log('Sample data (first 5 rows):');
+        console.table(parsedData.slice(0, 5));
+        
+        // Analyze data
+        const stats = analyzeData(parsedData);
+        console.log('Data statistics:', stats);
+        
+        // Display data preview
+        displayDataPreview(filename, stats);
+        
+        // Create volcano plot
+        createVolcanoPlot(parsedData);
+        
+        // Add a message to chat
+        addMessage('assistant', 'I\'ve loaded a real lung cancer dataset comparing Adenocarcinoma vs. Squamous Cell Carcinoma. Downregulated points represent genes typically expressed more in Squamous Cell Carcinoma, while upregulated are more expressed in Adenocarcinoma. You can now explore the volcano plot and ask me questions about the differentially expressed genes!');
+        
+    } catch (error) {
+        console.error('Error loading sample dataset:', error);
+        alert('Error loading sample dataset. Please try uploading your own CSV file instead.');
+    }
+}
 
 // Handle file upload
 async function handleFileUpload(event) {
@@ -354,7 +419,7 @@ function displayDataPreview(filename, stats) {
                 <div class="threshold-title">API Key:</div>
                 <div class="threshold-inputs">
                     <div class="threshold-input-group">
-                        <input type="password" id="apiKeyInput" placeholder="Enter Gemini API Key (optional)" style="width: 300px;" />
+                        <input type="password" id="apiKeyInput" placeholder="Enter Gemini API Key" style="width: 300px;" />
                     </div>
                 </div>
             </div>
@@ -382,6 +447,7 @@ function setupApiKeyListener() {
     if (apiKeyInput) {
         apiKeyInput.addEventListener('input', () => {
             console.log('API key changed');
+            updateSendButtonState(); // Update send button when API key changes
         });
     }
 }
@@ -1008,8 +1074,46 @@ async function checkHealth() {
         const response = await fetch('/api/health');
         const data = await response.json();
         console.log('Server status:', data);
+        
+        // Track if server has API key configured
+        hasServerApiKey = data.hasApiKey || false;
+        console.log('Server has API key:', hasServerApiKey);
+        
+        // Update send button state
+        updateSendButtonState();
     } catch (error) {
         console.error('Health check failed:', error);
+        hasServerApiKey = false;
+        updateSendButtonState();
+    }
+}
+
+// Check if chat can be used (has API key either from server or user input)
+function canSendMessage() {
+    if (hasServerApiKey) {
+        return true; // Server has API key, always allow
+    }
+    
+    // Check if user has entered an API key
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    return apiKeyInput && apiKeyInput.value.trim().length > 0;
+}
+
+// Update send button state based on API key availability
+function updateSendButtonState() {
+    const canSend = canSendMessage();
+    sendBtn.disabled = !canSend;
+    sendBtn.style.opacity = canSend ? '1' : '0.5';
+    sendBtn.style.cursor = canSend ? 'pointer' : 'not-allowed';
+    
+    // Update placeholder text if no API key available
+    if (!hasServerApiKey) {
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        if (apiKeyInput && !apiKeyInput.value.trim()) {
+            chatInput.placeholder = 'Enter API key above to start chatting...';
+        } else {
+            chatInput.placeholder = 'Ask about your data or selected genes...';
+        }
     }
 }
 
@@ -1107,6 +1211,12 @@ function removeLoadingMessage() {
 // Send message to chat
 async function sendMessage() {
     if (isProcessing) return;
+    
+    // Check if API key is available
+    if (!canSendMessage()) {
+        addMessage('assistant', 'Please enter your Gemini API key in the field above to start chatting.');
+        return;
+    }
     
     const message = chatInput.value.trim();
     if (!message) return;

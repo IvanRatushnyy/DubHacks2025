@@ -272,12 +272,39 @@ body {
 
 .empty-state {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     flex: 1;
     color: #9ca3af;
     font-size: 18px;
     overflow: hidden;
+    gap: 20px;
+}
+
+.empty-state p {
+    margin: 0;
+}
+
+.sample-data-btn {
+    padding: 12px 24px;
+    background: #0496FF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.sample-data-btn:hover {
+    background: #027BCE;
+}
+
+.sample-data-btn:active {
+    background: #016AAD;
 }
 
 .clickable-upload {
@@ -299,6 +326,12 @@ body {
     background: #f3f4f6;
     border-color: #0496FF;
     color: #0496FF;
+}
+
+.clickable-upload:has(.sample-data-btn:hover) {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #9ca3af;
 }
 
 .clickable-upload p {

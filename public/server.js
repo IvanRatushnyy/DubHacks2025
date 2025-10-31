@@ -291,7 +291,8 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok',
     mcpConnected: mcpClient !== null,
-    availableTools: availableTools.length
+    availableTools: availableTools.length,
+    hasApiKey: !!process.env.GEMINI_API_KEY
   });
 });
 

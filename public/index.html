@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <!-- PNG fallback (if you add a PNG to public/) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
 </head>
 <body>
     <div class="container">
@@ -31,6 +35,9 @@
             <div class="viz-content" id="vizContent">
                 <div id="volcanoPlot" class="empty-state clickable-upload">
                     <p>Click to upload DEA results and start exploring!</p>
+                    <button class="sample-data-btn" id="sampleDataBtn">
+                        No data? Click to explore real dataset for Lung Cancer!
+                    </button>
                 </div>
             </div>
 
