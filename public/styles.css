@@ -565,6 +565,14 @@ body {
     justify-content: center;
 }
 
+/* Controls Container - Horizontal layout for Threshold and API Key */
+.controls-container {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
 /* Threshold Controls */
 .threshold-controls {
     display: flex;
@@ -621,4 +629,29 @@ body {
 .threshold-input-group input[type="number"]:hover {
     border-color: #9ca3af;
 }
+
+.threshold-input-group input[type="password"] {
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Inter Tight', sans-serif;
+    color: #1f2937;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.threshold-input-group input[type="password"]:focus {
+    border-color: #3b82f6;
+}
+
+.threshold-input-group input[type="password"]:hover {
+    border-color: #9ca3af;
+}
+
+.threshold-input-group input[type="password"]::placeholder {
+    color: #9ca3af;
+}
+
 

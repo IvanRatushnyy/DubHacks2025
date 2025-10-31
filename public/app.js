@@ -335,16 +335,27 @@ function analyzeData(data) {
 // Display data preview in the visualization panel
 function displayDataPreview(filename, stats) {
     const html = `
-        <div class="threshold-controls">
-            <div class="threshold-title">Threshold:</div>
-            <div class="threshold-inputs">
-                <div class="threshold-input-group">
-                    <label for="log2fcThreshold">log2FC</label>
-                    <input type="number" id="log2fcThreshold" value="2.0" step="0.1" min="0" />
+        <div class="controls-container">
+            <div class="threshold-controls">
+                <div class="threshold-title">Threshold:</div>
+                <div class="threshold-inputs">
+                    <div class="threshold-input-group">
+                        <label for="log2fcThreshold">log2FC</label>
+                        <input type="number" id="log2fcThreshold" value="2.0" step="0.1" min="0" />
+                    </div>
+                    <div class="threshold-input-group">
+                        <label for="pvalThreshold">-log10(p)</label>
+                        <input type="number" id="pvalThreshold" value="2" step="0.1" min="0" />
+                    </div>
                 </div>
-                <div class="threshold-input-group">
-                    <label for="pvalThreshold">-log10(p)</label>
-                    <input type="number" id="pvalThreshold" value="2" step="0.1" min="0" />
+            </div>
+
+            <div class="threshold-controls">
+                <div class="threshold-title">API Key:</div>
+                <div class="threshold-inputs">
+                    <div class="threshold-input-group">
+                        <input type="password" id="apiKeyInput" placeholder="Enter Gemini API Key (optional)" style="width: 300px;" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -357,8 +368,22 @@ function displayDataPreview(filename, stats) {
     // Add event listeners for threshold changes
     setupThresholdListeners();
     
+    // Add event listener for API key changes
+    setupApiKeyListener();
+    
     // Show success state on upload button
     showUploadSuccess();
+}
+
+// Setup API key input listener
+function setupApiKeyListener() {
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('input', () => {
+            console.log('API key changed');
+        });
+    }
 }
 
 // Setup threshold input listeners
@@ -1099,18 +1124,29 @@ async function sendMessage() {
     // Get active context from pills
     const pillContext = getContextForChat();
     
+    // Get API key if provided
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const customApiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+    
     try {
+        const requestBody = {
+            message: message,
+            history: chatHistory,
+            selectedGenes: selectedGenes, // Include selected genes in context
+            context: pillContext // Include active pill context
+        };
+        
+        // Add custom API key if provided
+        if (customApiKey) {
+            requestBody.apiKey = customApiKey;
+        }
+        
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: message,
-                history: chatHistory,
-                selectedGenes: selectedGenes, // Include selected genes in context
-                context: pillContext // Include active pill context
-            })
+            body: JSON.stringify(requestBody)
         });
         
         if (!response.ok) {
